@@ -1,0 +1,80 @@
+"use client"
+
+import { useState } from "react"
+import { motion } from "framer-motion"
+
+interface Reaction {
+  emoji: string
+  count: number
+}
+
+export default function MessageReactions() {
+
+  const [reactions, setReactions] = useState<Reaction[]>([
+    { emoji: "👍", count: 2 },
+    { emoji: "🔥", count: 1 }
+  ])
+
+  const emojis = ["👍", "❤️", "🔥", "😂"]
+
+  function toggleReaction(emoji: string) {
+
+    setReactions((prev) => {
+
+      const existing = prev.find(r => r.emoji === emoji)
+
+      if (existing) {
+        return prev.map(r =>
+          r.emoji === emoji
+            ? { ...r, count: r.count + 1 }
+            : r
+        )
+      }
+
+      return [...prev, { emoji, count: 1 }]
+    })
+  }
+
+  return (
+
+    <div className="flex flex-wrap gap-2 mt-2">
+
+      {reactions.map((r) => (
+
+        <motion.button
+          key={r.emoji}
+          whileTap={{ scale: 0.9 }}
+          className="flex items-center gap-1 px-2 py-1 rounded-md bg-[#1c2233] hover:bg-indigo-600 text-sm"
+          onClick={() => toggleReaction(r.emoji)}
+        >
+
+          <span>{r.emoji}</span>
+
+          <span className="text-xs text-gray-300">
+            {r.count}
+          </span>
+
+        </motion.button>
+
+      ))}
+
+      {/* ADD REACTION */}
+
+      {emojis.map((emoji) => (
+
+        <motion.button
+          key={emoji}
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={() => toggleReaction(emoji)}
+          className="text-lg"
+        >
+          {emoji}
+        </motion.button>
+
+      ))}
+
+    </div>
+
+  )
+}

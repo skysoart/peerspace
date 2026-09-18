@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PEERSPACE | AI Command Center</title>
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;800;900&family=Inter:wght@400;500;600&display=swap"
+        rel="stylesheet">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <style>
+        :root {
+            --primary-bg: #060010;
+            --sidebar-bg: #050508;
+            --glass-bg: rgba(20, 22, 30, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --teal: #5EEAD4;
+            --orange: #FF9900;
+            /* Matching your screenshot */
+            --pink: #E947F5;
+            --purple: #7D26CF;
+            --blue: #5B85FA;
+            --red: #FF4D4D;
+            --accent: var(--teal);
+            --sidebar-width: 260px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--primary-bg);
+            color: #E2E8F0;
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        h1,
+        h2,
+        .stat-val,
+        button,
+        .chat-header,
+        .brand {
+            font-family: 'Outfit', sans-serif;
+        }
+
+        #floating-lines-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0;
+            pointer-events: none;
+            mix-blend-mode: screen;
+        }
+
+        /* 🔒 LOGIN OVERLAY */
+        #login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, #15182A 0%, #060010 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+
+        .login-card {
+            background: rgba(255, 255, 255, 0.02);
+            padding: 50px;
+            border-radius: 30px;
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(40px);
+            width: 400px;
+            text-align: center;
+            box-shadow: 0 40px 100px rgba(0, 0, 0, 0.8);
+        }
+
+        .login-input {
+            width: 100%;
+            padding: 14px;
+            margin-bottom: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            color: white;
+            outline: none;
+            font-size: 1rem;
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, var(--pink), var(--purple));
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-weight: 800;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        /* 🔵 SIDEBAR */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--sidebar-bg);
+            border-right: 1px solid var(--glass-border);
+            display: flex;
+            flex-direction: column;
+            padding: 30px 20px;
+            z-index: 100;
+            position: relative;
+        }
+
+        .brand {
+            font-size: 1.6rem;
+            font-weight: 900;
+            letter-spacing: 2px;
+            margin-bottom: 50px;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .brand span {
+            color: var(--accent);
+        }
+
+        .cube-icon {
+            width: 22px;
+            height: 22px;
+            border-radius: 6px;
+            background: linear-gradient(135deg, var(--pink), var(--purple));
+            box-shadow: 0 0 10px var(--pink);
+        }
+
+        .sidebar-label {
+            font-size: 0.65rem;
+            color: #4A5568;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin: 30px 0 15px;
+        }
+
+        .nav-item {
+            padding: 12px 15px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 6px;
+            color: #94A3B8;
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+
+        .nav-item.active {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--accent);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-create-sidebar {
+            margin-top: auto;
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px dashed rgba(255, 255, 255, 0.2);
+            background: transparent;
+            color: #718096;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        /* 🖥️ VIEWPORT */
+        .viewport {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+            z-index: 10;
+        }
+
+        .header-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 40px;
+            height: 80px;
+            border-bottom: 1px solid var(--glass-border);
+            background: rgba(6, 0, 16, 0.4);
+            backdrop-filter: blur(20px);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 25px;
+            align-items: center;
+        }
+
+        .nav-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #94A3B8;
+            cursor: pointer;
+        }
+
+        .btn-plus-header {
+            background: linear-gradient(135deg, var(--pink), var(--purple));
+            border: none;
+            padding: 10px 20px;
+            border-radius: 12px;
+            color: white;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(233, 71, 245, 0.3);
+        }
+
+        .content {
+            flex: 1;
+            padding: 40px 50px;
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            overflow-y: auto;
+        }
+
+        .welcome-hero h1 {
+            margin: 0;
+            font-size: 3rem;
+            font-weight: 800;
+            color: white;
+            letter-spacing: -1px;
+        }
+
+        .welcome-hero h1 span {
+            color: var(--accent);
+        }
+
+        .health-badge {
+            background: rgba(94, 234, 212, 0.05);
+            color: var(--teal);
+            border: 1px solid rgba(94, 234, 212, 0.2);
+            padding: 8px 18px;
+            border-radius: 30px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .health-badge::before {
+            content: '●';
+            animation: pulse 2s infinite;
+        }
+
+        /* GRID */
+        .main-grid {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 1fr 0.8fr;
+            gap: 30px;
+            min-height: 500px;
+            padding-bottom: 20px;
+        }
+
+        .panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--glass-bg);
+            border-radius: 24px;
+            border: 1px solid var(--glass-border);
+            overflow: hidden;
+            backdrop-filter: blur(40px);
+        }
+
+        .panel-resizable {
+            resize: horizontal;
+            overflow: auto;
+        }
+
+        .panel-header {
+            padding: 20px 25px;
+            border-bottom: 1px solid var(--glass-border);
+            font-weight: 800;
+            font-size: 1.1rem;
+            color: white;
+            background: rgba(0, 0, 0, 0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .badge-context {
+            font-size: 0.7rem;
+            color: var(--accent);
+            background: rgba(255, 255, 255, 0.05);
+            padding: 4px 12px;
+            border-radius: 20px;
+            text-transform: uppercase;
+            font-weight: 800;
+        }
+
+        .msg-list {
+            flex: 1;
+            padding: 25px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* 🎤 INPUT BAR */
+        .input-bar {
+            padding: 20px 25px;
+            background: rgba(0, 0, 0, 0.4);
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            border-top: 1px solid var(--glass-border);
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 14px 20px;
+            border-radius: 12px;
+            border: 1px solid var(--glass-border);
+            background: rgba(255, 255, 255, 0.03);
+            color: white;
+            outline: none;
+            font-size: 1rem;
+        }
+
+        .mic-btn {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--glass-border);
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            min-width: 48px;
+            cursor: pointer;
+            color: #94A3B8;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .mic-btn.listening {
+            background: var(--red);
+            color: white;
+            animation: pulse-red 1.5s infinite;
+        }
+
+        .send-btn {
+            background: var(--pink);
+            border: none;
+            width: 85px;
+            height: 48px;
+            border-radius: 12px;
+            color: white;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        /* STATS */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 25px;
+            margin-bottom: 10px;
+        }
+
+        .stat-card {
+            background: var(--glass-bg);
+            border-radius: 24px;
+            border: 1px solid var(--glass-border);
+            padding: 25px;
+        }
+
+        .stat-val {
+            font-size: 3rem;
+            font-weight: 900;
+            color: white;
+            line-height: 1;
+        }
+
+        .stat-lbl {
+            font-size: 0.75rem;
+            color: #4A5568;
+            text-transform: uppercase;
+            margin-top: 10px;
+            letter-spacing: 2px;
+        }
+
+        /* MESSAGE BUBBLES */
+        .msg {
+            display: flex;
+            gap: 15px;
+            animation: fadeIn 0.4s;
+            position: relative;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 1.2rem;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .msg-body {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .msg-user {
+            font-weight: 800;
+            font-size: 0.95rem;
+            color: white;
+            margin-bottom: 4px;
+        }
+
+        .msg-content-wrapper {
+            display: flex;
+            gap: 0;
+            border-radius: 18px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            background: rgba(255, 255, 255, 0.03);
+            width: fit-content;
+            max-width: 100%;
+        }
+
+        .msg-text {
+            font-size: 1rem;
+            line-height: 1.5;
+            color: #CBD5E0;
+            padding: 14px 20px;
+        }
+
+        .msg.sent .msg-content-wrapper {
+            align-self: flex-end;
+            background: rgba(47, 75, 162, 0.5);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .msg.received .msg-content-wrapper {
+            align-self: flex-start;
+        }
+
+        /* 🚩 FORCE OVERRIDE DESIGN FIX (Matching image_8903bc.png) */
+        .msg.blocked .msg-content-wrapper {
+            border: 1px solid var(--red);
+            background: rgba(255, 77, 77, 0.08);
+            align-self: flex-end;
+        }
+
+        .msg.blocked .msg-text {
+            color: #FFB3B3;
+            flex: 1;
+        }
+
+        .force-bar {
+            width: 120px;
+            background: var(--orange);
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            padding-bottom: 15px;
+            cursor: pointer;
+            transition: 0.3s;
+            flex-shrink: 0;
+        }
+
+        .force-bar:hover {
+            filter: brightness(1.2);
+        }
+
+        .force-bar-text {
+            font-family: 'Outfit';
+            font-weight: 900;
+            font-size: 10px;
+            color: black;
+            text-transform: uppercase;
+            text-align: center;
+            line-height: 1.2;
+            pointer-events: none;
+        }
+
+        .toggle-btn {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--glass-border);
+            border-radius: 30px;
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .toggle-btn.on {
+            border-color: var(--teal);
+            background: rgba(94, 234, 212, 0.05);
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--red);
+            box-shadow: 0 0 10px var(--red);
+        }
+
+        .toggle-btn.on .dot {
+            background: var(--teal);
+            box-shadow: 0 0 10px var(--teal);
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
+        @keyframes pulse-red {
+            0% {
+                box-shadow: 0 0 0 0 rgba(255, 77, 77, 0.7);
+            }
+
+            70% {
+                box-shadow: 0 0 0 10px rgba(255, 77, 77, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(255, 77, 77, 0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="floating-lines-canvas"></div>
+
+    <div id="login-overlay">
+        <div class="login-card">
+            <div class="brand">PEERSPACE <span>AI</span></div>
+            <h2 style="color:white; margin-bottom:10px;">Security Portal</h2>
+            <p style="color:#718096; font-size:0.85rem; margin-bottom:30px;">Initialize session to proceed</p>
+            <input type="text" id="admin-user" class="login-input" placeholder="admin">
+            <input type="password" id="admin-pass" class="login-input" placeholder="techKali">
+            <button class="login-btn" onclick="handleLogin()">Unlock Interface</button>
+            <p id="login-error" style="color:var(--red); margin-top:15px; display:none; font-size:0.8rem;">Access Denied
+            </p>
+        </div>
+    </div>
+
+    <div id="main-dashboard" style="display:none; width:100%;">
+        <div class="sidebar">
+            <div class="brand">
+                <div class="cube-icon"></div> PEERSPACE
+            </div>
+            <div class="sidebar-label">Communities</div>
+            <div class="nav-item">🌐 Global Network</div>
+            <div class="nav-item">🎓 VIT Chennai</div>
+            <div class="sidebar-label">Channels</div>
+            <div class="nav-item" id="nav-general" onclick="switchChannel('general')"># general</div>
+            <div class="nav-item active" id="nav-java" onclick="switchChannel('java')"># java-fullstack</div>
+            <button class="btn-create-sidebar">+ Create Community</button>
+        </div>
+
+        <div class="viewport">
+            <div class="header-nav">
+                <div class="nav-links">
+                    <span class="nav-title">Moderation AI ▾</span>
+                    <span class="nav-title">Live Stats ▾</span>
+                    <span class="nav-title">System Logs ▾</span>
+                </div>
+                <div style="display:flex; gap:15px; align-items:center;">
+                    <div class="toggle-btn on" id="ai-parent" onclick="toggleAI()">
+                        <div class="dot"></div>
+                        <span id="ai-txt" style="font-size:0.8rem; font-weight:900; color:white;">AI FILTER: ON</span>
+                    </div>
+                    <button class="btn-plus-header">+ Create Space</button>
+                </div>
+            </div>
+
+            <div class="content">
+                <div class="welcome-hero">
+                    <div>
+                        <h1>Welcome back, <span id="dyn-name">Admin.</span></h1>
+                        <p style="color:#94A3B8; margin-top:8px;">Here's what is happening in your network today.</p>
+                    </div>
+                    <div class="health-badge">100% Health</div>
+                </div>
+
+                <div class="stats-row">
+                    <div class="stat-card">
+                        <div class="stat-val" id="count-safe">0</div>
+                        <div class="stat-lbl">Approved</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-val" style="color:var(--accent)">142</div>
+                        <div class="stat-lbl">Active Channels</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-val" id="count-blocked" style="color:var(--red)">0</div>
+                        <div class="stat-lbl">Threats Detected</div>
+                    </div>
+                </div>
+
+                <div class="main-grid">
+                    <div class="panel">
+                        <div class="panel-header">Admin Console (You) <span class="badge-context" id="ctx-label">Java
+                                Full Stack</span></div>
+                        <div class="msg-list" id="sender-msgs"></div>
+                        <div class="input-bar">
+                            <button class="mic-btn" id="mic-btn" onclick="startSTT()">🎤</button>
+                            <input type="text" id="msg-input" placeholder="Enter message to the community..."
+                                onkeypress="handleEnter(event)">
+                            <button class="send-btn" onclick="sendMessage()">Send</button>
+                        </div>
+                    </div>
+                    <div class="panel">
+                        <div class="panel-header">Community Feed View <span class="badge-context">Live Sync</span></div>
+                        <div class="msg-list" id="receiver-msgs"></div>
+                    </div>
+                    <div class="panel panel-resizable">
+                        <div class="panel-header">System Logs ↔</div>
+                        <div class="msg-list" id="system-logs" style="font-size:0.75rem; color:#4A5568;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = "http://127.0.0.1:8000/api/chat/send";
+        let safeCount = 0, blockedCount = 0, aiEnabled = true;
+
+        function handleLogin() {
+            if (document.getElementById('admin-user').value === "admin" && document.getElementById('admin-pass').value === "techKali") {
+                gsap.to("#login-overlay", {
+                    opacity: 0, duration: 0.8, onComplete: () => {
+                        document.getElementById('login-overlay').style.display = 'none';
+                        document.getElementById('main-dashboard').style.display = 'flex';
+                        addLog("Security cleared. Interface initialized.");
+                    }
+                });
+            } else { document.getElementById('login-error').style.display = 'block'; }
+        }
+
+        function switchChannel(channel) {
+            const root = document.documentElement;
+            const navGen = document.getElementById('nav-general');
+            const navJava = document.getElementById('nav-java');
+            const ctxLabel = document.getElementById('ctx-label');
+            const aiParent = document.getElementById('ai-parent');
+
+            if (channel === 'general') {
+                navGen.classList.add('active'); navJava.classList.remove('active');
+                ctxLabel.innerText = 'General';
+                root.style.setProperty('--accent', 'var(--orange)');
+                aiEnabled = false; aiParent.classList.remove('on');
+                updateAIUI(); addLog("Channel: General. AI Filter: OFF.");
+            } else {
+                navJava.classList.add('active'); navGen.classList.remove('active');
+                ctxLabel.innerText = 'Java Full Stack';
+                root.style.setProperty('--accent', 'var(--teal)');
+                aiEnabled = true; aiParent.classList.add('on');
+                updateAIUI(); addLog("Channel: Java Full Stack. AI Filter: ON.");
+            }
+        }
+
+        function toggleAI() {
+            aiEnabled = !aiEnabled;
+            const aiParent = document.getElementById('ai-parent');
+            if (aiEnabled) aiParent.classList.add('on'); else aiParent.classList.remove('on');
+            updateAIUI();
+        }
+
+        function updateAIUI() {
+            document.getElementById("ai-txt").innerText = aiEnabled ? "AI FILTER: ON" : "AI FILTER: OFF";
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById("msg-input");
+            const text = input.value.trim();
+            if (!text) return;
+            input.value = "";
+
+            if (!aiEnabled) {
+                safeCount++; updateUI();
+                addMessage("sender-msgs", text, "sent", "Admin");
+                addMessage("receiver-msgs", text, "received", "Peer");
+                return;
+            }
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: "POST", headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ user_id: 101, group_id: 1, message: text })
+                });
+                const data = await response.json();
+                if (data.action === "APPROVED") {
+                    safeCount++; addMessage("sender-msgs", text, "sent", "Admin"); addMessage("receiver-msgs", text, "received", "Peer");
+                } else {
+                    blockedCount++; addMessage("sender-msgs", `🚫 BLOCKED: ${text}<br><br>Reason: ${data.feedback}`, "blocked", "Admin");
+                }
+                updateUI();
+            } catch (e) { addLog("❌ Server Timeout."); }
+        }
+
+        function addMessage(containerId, text, type, user) {
+            const container = document.getElementById(containerId);
+            const msgDiv = document.createElement("div");
+            msgDiv.className = `msg ${type}`;
+            const avatarColor = type === 'sent' ? 'linear-gradient(135deg, #FFB3CC, #FF4D94)' : 'linear-gradient(135deg, #CCB3FF, #704DFF)';
+
+            let htmlContent = `
+                <div class="avatar" style="background: ${avatarColor}">${user[0]}</div>
+                <div class="msg-body">
+                    <div class="msg-user">${user}</div>
+                    <div class="msg-content-wrapper">
+                        <div class="msg-text">${text}</div>
+            `;
+
+            if (type === "blocked") {
+                const raw = text.split("<br>")[0].replace("🚫 BLOCKED: ", "").replace(/'/g, "&apos;");
+                htmlContent += `
+                    <div class="force-bar" onclick="forceOverride(this, '${raw}')">
+                        <div class="force-bar-text">FORCE APPROVE<br>(techKali)</div>
+                    </div>
+                `;
+            }
+
+            htmlContent += `</div></div>`;
+            msgDiv.innerHTML = htmlContent;
+            container.appendChild(msgDiv);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function forceOverride(btn, txt) {
+            if (prompt("Admin Key:") === "techKali") {
+                blockedCount--; safeCount++; updateUI();
+                const parentMsg = btn.closest('.msg');
+                parentMsg.className = "msg sent";
+                parentMsg.querySelector('.msg-content-wrapper').innerHTML = `<div class="msg-text">${txt} (Admin Overridden)</div>`;
+                addMessage("receiver-msgs", txt, "received", "Peer");
+                addLog("Policy Override: Content Approved.");
+            }
+        }
+
+        function updateUI() {
+            document.getElementById("count-safe").innerText = safeCount;
+            document.getElementById("count-blocked").innerText = blockedCount;
+        }
+
+        function addLog(m) {
+            const l = document.getElementById("system-logs");
+            l.innerHTML = `<div style="margin-bottom:8px;">[${new Date().toLocaleTimeString()}] ${m}</div>` + l.innerHTML;
+        }
+
+        function handleEnter(e) { if (e.key === "Enter") sendMessage(); }
+
+        function startSTT() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) return;
+            const rec = new SpeechRecognition();
+            rec.onstart = () => { document.getElementById("mic-btn").classList.add("listening"); addLog("🎙️ Listening..."); };
+            rec.onresult = (e) => document.getElementById("msg-input").value = e.results[0][0].transcript;
+            rec.onend = () => document.getElementById("mic-btn").classList.remove("listening");
+            rec.start();
+        }
+
+        /* 🌊 Three.js Shader */
+        const vShader = `void main() { gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
+        const fShader = `precision highp float; uniform float iTime; uniform vec3 iResolution; vec3 PINK = vec3(233.0, 71.0, 245.0) / 255.0; vec3 BLUE = vec3(47.0, 75.0, 162.0) / 255.0; mat2 rotate(float r) { return mat2(cos(r), sin(r), -sin(r), cos(r)); } float wave(vec2 uv, float offset) { float x = iTime * 0.04; float y = sin(uv.x + offset + x) * (sin(offset + iTime * 0.1) * 0.4); return 0.015 / max(abs(uv.y - y) + 0.01, 1e-3); } void main() { vec2 uv = (2.0 * gl_FragCoord.xy - iResolution.xy) / iResolution.y; vec3 col = vec3(0.0); for (int i = 0; i < 4; ++i) { float fi = float(i); vec2 ruv = uv * rotate(-0.2 * log(length(uv) + 1.0)); col += mix(BLUE, PINK, fi/3.0) * wave(ruv + vec2(0.08 * fi + 10.0, 0.5), 1.0 + 0.2 * fi) * 0.15; } gl_FragColor = vec4(col, 1.0); }`;
+        const container = document.getElementById('floating-lines-canvas');
+        const scene = new THREE.Scene();
+        const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        container.appendChild(renderer.domElement);
+        const uniforms = { iTime: { value: 0 }, iResolution: { value: new THREE.Vector3() } };
+        const material = new THREE.ShaderMaterial({ uniforms, vertexShader: vShader, fragmentShader: fShader, transparent: true, blending: THREE.AdditiveBlending });
+        scene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material));
+        function resize() { renderer.setSize(window.innerWidth, window.innerHeight); uniforms.iResolution.value.set(window.innerWidth, window.innerHeight, 1); }
+        window.addEventListener('resize', resize); resize();
+        const clock = new THREE.Clock();
+        function animate() { uniforms.iTime.value = clock.getElapsedTime(); renderer.render(scene, camera); requestAnimationFrame(animate); }
+        animate();
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: peerspace-main-api
+    env: python
+    rootDir: peerspace-backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+
+  - type: web
+    name: peerspace-ai-moderator
+    env: python
+    rootDir: peerspace-backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn moderator:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false

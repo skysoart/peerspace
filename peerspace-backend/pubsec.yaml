@@ -1,0 +1,35 @@
+name: peerspace
+description: AI moderated community chat app
+
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Networking
+  http: ^1.2.1
+
+  # Image picker
+  image_picker: ^1.1.2
+
+  # Voice recognition
+  speech_to_text: ^7.3.0
+
+  # AI (Gemini)
+  google_generative_ai: ^0.4.6
+
+  cupertino_icons: ^1.0.6
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true

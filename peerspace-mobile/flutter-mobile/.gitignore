@@ -1,0 +1,29 @@
+# Flutter
+build/
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+android/**/generated/
+android/app/src/main/res/values/strings.xml
+android/local.properties
+ios/Flutter/Generated.xcconfig
+ios/Flutter/flutter_export_environment.sh
+ios/Runner/GeneratedPluginRegistrant.h
+ios/Runner/GeneratedPluginRegistrant.m
+lib/generated_plugin_registrant.dart
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.env
+.venv
+env/
+venv/
+ENV/
+backend/.env
+
+# OS
+.DS_Store
+Thumbs.db
