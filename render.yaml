@@ -10,6 +10,19 @@ services:
         sync: false
       - key: GEMINI_API_KEY
         sync: false
+      # Signs the auth tokens. Without it each restart invalidates every
+      # session, so set a real value (Render can generate one).
+      - key: SECRET_KEY
+        generateValue: true
+      # The moderator runs as its own service, so 127.0.0.1 never resolves.
+      - key: MODERATOR_URL
+        fromService:
+          type: web
+          name: peerspace-ai-moderator
+          envVarKey: RENDER_EXTERNAL_URL
+      # Comma-separated browser origins allowed to call this API.
+      - key: FRONTEND_ORIGINS
+        sync: false
 
   - type: web
     name: peerspace-ai-moderator
@@ -21,4 +34,6 @@ services:
       - key: DATABASE_URL
         sync: false
       - key: GEMINI_API_KEY
+        sync: false
+      - key: FRONTEND_ORIGINS
         sync: false

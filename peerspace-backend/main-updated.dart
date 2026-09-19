@@ -2821,7 +2821,7 @@ class PrivacySecurityScreen extends StatefulWidget {
 
 class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
   bool _obscurePassword = true;
-  final String _mockPassword = "Hackathon@VitChennai2026!";
+  final String _mockPassword = "ExamplePassword123!";
 
   @override
   Widget build(BuildContext context) {

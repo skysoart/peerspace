@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Hash, ChevronDown, Plus, Loader2, Settings } from "lucide-react"
 import { usePathname, useRouter } from "next/navigation"
 import clsx from "clsx"
+import { authFetch } from "@/services/authFetch"
 
 interface Channel {
   id: number
@@ -42,14 +43,14 @@ export default function ChannelSidebar() {
     setLoading(true)
 
     // Fetch all communities and match
-    fetch(`${API}/communities/`)
+    authFetch(`${API}/communities/`)
       .then(r => r.json())
       .then(async (comms: Community[]) => {
         if (comms.length > 0) {
           // try to find the community for the active channel
           const firstComm = comms[0]
           setCommunity(firstComm)
-          const res = await fetch(`${API}/channels/${firstComm.id}`)
+          const res = await authFetch(`${API}/channels/${firstComm.id}`)
           const chans: Channel[] = await res.json()
           setChannels(chans)
         }
@@ -65,12 +66,12 @@ export default function ChannelSidebar() {
     const channelId = parseInt(communityMatch[1])
 
     // Find which community owns this channel
-    fetch(`${API}/communities/`)
+    authFetch(`${API}/communities/`)
       .then(r => r.json())
       .then(async (comms: Community[]) => {
         for (const comm of comms) {
           try {
-            const res = await fetch(`${API}/channels/${comm.id}`)
+            const res = await authFetch(`${API}/channels/${comm.id}`)
             const chans: Channel[] = await res.json()
             if (chans.some(c => c.id === channelId)) {
               setCommunity(comm)
@@ -81,7 +82,7 @@ export default function ChannelSidebar() {
         }
         // fallback: just use first community
         if (comms.length > 0) {
-          const res = await fetch(`${API}/channels/${comms[0].id}`)
+          const res = await authFetch(`${API}/channels/${comms[0].id}`)
           const chans = await res.json()
           setCommunity(comms[0])
           setChannels(chans)
@@ -93,7 +94,7 @@ export default function ChannelSidebar() {
     if (!newChannelName.trim() || !community) return
     setAdding(true)
     try {
-      const res = await fetch(`${API}/channels/create`, {
+      const res = await authFetch(`${API}/channels/create`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: newChannelName.trim(), community_id: community.id })

@@ -65,7 +65,6 @@ export default function RealtimeChat({
 
     sendSocketMessage({
       channel_id: channelId,
-      user_id: 1,
       message_text: text
     })
 
@@ -85,7 +84,7 @@ export default function RealtimeChat({
 
       {/* CHAT */}
 
-      <ChatLayout />
+      <ChatLayout messages={messages} />
 
       {/* INPUT */}
 

@@ -9,3 +9,5 @@ python-jose
 email-validator
 google-genai
 python-dotenv
+requests
+psycopg2-binary

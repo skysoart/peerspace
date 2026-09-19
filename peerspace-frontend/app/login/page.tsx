@@ -23,24 +23,12 @@ export default function LoginPage() {
 
     try {
 
-      const res = await apiClient.login({
+      await apiClient.login({
         email,
         password
       })
 
-      // Save user info to localStorage for use across the app
-      if (res.user) {
-        localStorage.setItem("user", JSON.stringify(res.user))
-      } else {
-        // Fallback: parse the email as username if no user object returned
-        localStorage.setItem("user", JSON.stringify({
-          id: res.user_id || 1,
-          username: email.split("@")[0],
-          email,
-          type: "user"
-        }))
-      }
-
+      // apiClient.login stores the real token + user returned by the server.
       router.push("/home")
 
     } catch (err: any) {

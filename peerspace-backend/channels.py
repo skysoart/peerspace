@@ -2,7 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from database import get_db
-from models import Channel
+from models import Channel, Community, User
+from auth import get_current_user
+from community import require_admin
 
 router = APIRouter(prefix="/channels", tags=["channels"])
 
@@ -17,7 +19,16 @@ def channel_dict(c: Channel) -> dict:
 
 
 @router.post("/create")
-def create_channel(data: ChannelCreate, db: Session = Depends(get_db)):
+def create_channel(
+    data: ChannelCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    community = db.query(Community).filter(Community.id == data.community_id).first()
+    if not community:
+        raise HTTPException(status_code=404, detail="Community not found")
+    require_admin(db, community, current_user)
+
     channel = Channel(name=data.name, community_id=data.community_id)
     db.add(channel)
     db.commit()

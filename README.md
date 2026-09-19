@@ -107,6 +107,9 @@ peerspace/
 * Next.js
 * React
 * TypeScript
+* Tailwind CSS
+* Zustand (client state)
+* TanStack Query (server state)
 * Framer Motion
 * Lucide Icons
 
@@ -153,23 +156,42 @@ The development server will start locally.
 
 ### 3. Backend
 
+The backend is **two** processes: the main API and the AI moderator. The main
+API calls the moderator over HTTP, so both must be running.
+
 ```bash
 cd peerspace-backend
 pip install -r requirements.txt
 ```
 
-Create an environment file and configure the required variables:
-
-```env
-GEMINI_API_KEY=your_gemini_api_key
-DATABASE_URL=your_database_url
-```
-
-Start the FastAPI server:
+Create a `.env` file (see [Environment Variables](#environment-variables)), then
+create the tables:
 
 ```bash
-uvicorn main:app --reload
+python create_tables.py
 ```
+
+If you are upgrading an existing database, apply the additive column changes too:
+
+```bash
+python migrate.py
+```
+
+Start the main API on port 8000:
+
+```bash
+uvicorn main:app --reload --port 8000
+```
+
+Start the AI moderator on port 8001, in a second terminal:
+
+```bash
+uvicorn moderator:app --reload --port 8001
+```
+
+The main API expects the moderator at `http://127.0.0.1:8001` by default;
+override with `MODERATOR_URL`. If the moderator is unreachable or has no API
+key, messages are **flagged for human review** rather than auto-approved.
 
 ### 4. Mobile
 
@@ -183,16 +205,64 @@ flutter run
 
 ## Environment Variables
 
-The backend requires environment configuration for external services and database connectivity.
+### Backend (`peerspace-backend/.env`)
 
-Example:
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `GEMINI_API_KEY` | yes | Gemini API key used by the moderator. Without it every message is flagged for review. |
+| `DATABASE_URL` | no | SQLAlchemy URL. Falls back to a local SQLite file (`fallback.db`) when unset. |
+| `SECRET_KEY` | yes in deployment | Signs auth tokens. If unset a random key is generated per process, so every restart logs everyone out. |
+| `MODERATOR_URL` | no | Where the main API reaches the moderator. Accepts a bare origin or a full endpoint URL. Defaults to `http://127.0.0.1:8001`. |
+| `FRONTEND_ORIGINS` | yes in deployment | Comma-separated browser origins allowed by CORS. Defaults to localhost:3000 only, which blocks a deployed frontend. |
+| `GEMINI_MODEL` | no | Overrides the model name. Defaults to `gemini-2.0-flash`. |
 
 ```env
 GEMINI_API_KEY=your_gemini_api_key
 DATABASE_URL=your_database_url
+SECRET_KEY=a_long_random_string
+FRONTEND_ORIGINS=https://your-frontend.example.com
+```
+
+### Frontend (`peerspace-frontend/.env.local`)
+
+| Variable | Purpose |
+| --- | --- |
+| `NEXT_PUBLIC_API_URL` | Base URL of the main API. Defaults to `http://127.0.0.1:8000`. |
+| `NEXT_PUBLIC_WS_URL` | WebSocket base URL. Defaults to `ws://localhost:8000`. |
+
+```env
+NEXT_PUBLIC_API_URL=http://127.0.0.1:8000
+NEXT_PUBLIC_WS_URL=ws://localhost:8000
 ```
 
 Do not commit API keys, passwords, tokens, or other secrets to the repository.
+
+## Authentication
+
+Signing up or logging in returns a JWT plus the user record. The frontend stores
+both and sends `Authorization: Bearer <token>` on every request.
+
+The server takes the acting user from that token. It does **not** trust a
+`user_id` sent in a request body or query string, so a client cannot act on
+another person's behalf.
+
+* `POST /auth/signup` - create an account, returns `{ token, user }`
+* `POST /auth/login` - returns `{ token, user }`
+* `POST /auth/guest` - starts an anonymous session backed by a real token, so
+  "continue as guest" works without weakening the rest of the API
+* `GET /auth/me` - resolve the current user from the token alone
+
+Permissions:
+
+| Action | Who |
+| --- | --- |
+| Send a message | any signed-in user (including guests) |
+| Delete a message | its author, or a community admin/moderator |
+| Create a channel, edit a community, remove a member | community owner, admin, or moderator |
+| Review the flagged queue, change a message status | community owner, admin, or moderator — scoped to communities they administer |
+
+Tokens are valid for one day. When one lapses the frontend clears the session
+and returns to the login screen.
 
 ## Development
 

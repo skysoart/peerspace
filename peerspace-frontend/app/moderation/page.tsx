@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
 import { Check, Ban } from "lucide-react"
+import { authFetch } from "@/services/authFetch"
 
 interface FlaggedMessage {
   id: number
@@ -21,22 +22,22 @@ export default function ModerationPage() {
 
   async function loadMessages() {
 
-    const res = await fetch(`${API}/messages/flagged`)
+    const res = await authFetch(`${API}/messages/flagged`)
 
     const data = await res.json()
 
-    setMessages(data.data || [])
+    setMessages(data.messages || [])
     setLoading(false)
   }
 
   async function updateStatus(id: number, status: string) {
 
-    await fetch(`${API}/messages/${id}/status`, {
+    await authFetch(`${API}/messages/${id}/status`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({ status })
+      body: JSON.stringify({ new_status: status })
     })
 
     setMessages((prev) =>

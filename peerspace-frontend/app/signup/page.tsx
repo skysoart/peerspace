@@ -38,13 +38,14 @@ export default function SignupPage() {
 
     try {
 
+      // signup returns a token + user, which apiClient stores for us.
       await apiClient.signup({
         username,
         email,
         password
       })
 
-      router.push("/login")
+      router.push("/home")
 
     } catch (err) {
 
@@ -62,15 +63,16 @@ export default function SignupPage() {
   // CONTINUE AS GUEST
   // ------------------------------
 
-  function handleAnonymous() {
+  async function handleAnonymous() {
 
-    const guestUser = {
-      id: 99999,  // Use a fixed numeric guest ID for API compatibility  
-      username: "Guest_" + Math.floor(Math.random() * 10000),
-      type: "guest"
+    // Ask the server for a real guest token instead of inventing an id
+    // client-side; every endpoint requires a token now.
+    const guest = await apiClient.guest()
+
+    if (!guest) {
+      setError("Could not start a guest session")
+      return
     }
-
-    localStorage.setItem("user", JSON.stringify(guestUser))
 
     router.push("/home")
 

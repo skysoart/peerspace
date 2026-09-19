@@ -11,6 +11,7 @@ import {
   UserPlus, LogOut, Crown, UserMinus, Edit2, Check, Loader2,
   Volume2, VolumeX, Video, Pin, Bell
 } from "lucide-react"
+import { authFetch, getStoredUser } from "@/services/authFetch"
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"
 
@@ -111,11 +112,7 @@ export default function ChannelPage() {
 
   // ─── Helpers ────────────────────────────────────────────────────────────────
   function getCurrentUser() {
-    try {
-      const s = localStorage.getItem("user")
-      if (s) return JSON.parse(s)
-    } catch {}
-    return { id: 1, username: "You", type: "user" }
+    return getStoredUser() || { id: 0, username: "You", type: "guest" }
   }
 
   const fmtTime = (iso?: string | null) => {
@@ -126,11 +123,11 @@ export default function ChannelPage() {
   // ─── Fetch Community + Channel Info ─────────────────────────────────────────
   async function loadCommunity() {
     try {
-      const chRes = await fetch(`${API}/channels/detail/${channelId}`)
+      const chRes = await authFetch(`${API}/channels/detail/${channelId}`)
       if (!chRes.ok) return
       const chData = await chRes.json()
       const communityId = chData.community_id || 1
-      const commRes = await fetch(`${API}/communities/${communityId}`)
+      const commRes = await authFetch(`${API}/communities/${communityId}`)
       if (commRes.ok) {
         const comm = await commRes.json()
         setCommunity(comm)
@@ -144,14 +141,14 @@ export default function ChannelPage() {
   // ─── Fetch Messages ──────────────────────────────────────────────────────────
   const loadMessages = useCallback(async () => {
     try {
-      const res = await fetch(`${API}/messages/${channelId}`)
+      const res = await authFetch(`${API}/messages/${channelId}`)
       if (!res.ok) return
       const data = await res.json()
       const user = getCurrentUser()
       const raw: any[] = data.messages || data || []
       setMessages(raw.map(m => ({
         ...m,
-        isOwn: m.user_id === (user.id || 1),
+        isOwn: m.user_id === user.id,
         reactions: m.reactions || {},
       })))
     } catch {}
@@ -161,11 +158,11 @@ export default function ChannelPage() {
   // ─── Fetch Members ───────────────────────────────────────────────────────────
   async function loadMembers() {
     try {
-      const chRes = await fetch(`${API}/channels/${channelId}`)
+      const chRes = await authFetch(`${API}/channels/${channelId}`)
       if (!chRes.ok) return
       const chData = await chRes.json()
       const commId = chData.community_id || 1
-      const res = await fetch(`${API}/communities/${commId}/members`)
+      const res = await authFetch(`${API}/communities/${commId}/members`)
       if (res.ok) setMembers(await res.json())
     } catch {}
   }
@@ -210,7 +207,7 @@ export default function ChannelPage() {
     const tempId = Date.now()
     const optimistic: Msg = {
       id: tempId,
-      user_id: user.id || 1,
+      user_id: user.id,
       username: user.username,
       message_text: replyTo ? `> @${replyTo.username}: ${replyTo.message_text}\n${text}` : text,
       status: "pending",
@@ -220,10 +217,10 @@ export default function ChannelPage() {
     setMessages(prev => [...prev, optimistic])
 
     try {
-      const res = await fetch(`${API}/messages/send`, {
+      const res = await authFetch(`${API}/messages/send`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: user.id || 1, channel_id: channelId, message_text: optimistic.message_text }),
+        body: JSON.stringify({ channel_id: channelId, message_text: optimistic.message_text }),
       })
       const result = await res.json()
       setMessages(prev => prev.map(m =>
@@ -241,11 +238,10 @@ export default function ChannelPage() {
 
   // ─── Delete Message ──────────────────────────────────────────────────────────
   async function deleteMessage(msgId: number) {
-    const user = getCurrentUser()
     setMessages(prev => prev.filter(m => m.id !== msgId))
     setMsgMenuId(null)
     try {
-      await fetch(`${API}/messages/${msgId}?user_id=${user.id || 1}`, { method: "DELETE" })
+      await authFetch(`${API}/messages/${msgId}`, { method: "DELETE" })
     } catch {}
   }
 
@@ -266,7 +262,7 @@ export default function ChannelPage() {
     if (!community) return
     setSavingSettings(true)
     try {
-      const res = await fetch(`${API}/communities/${community.id}`, {
+      const res = await authFetch(`${API}/communities/${community.id}`, {
         method: "PUT", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: editName, description: editDesc, icon: editIcon }),
       })
@@ -276,10 +272,9 @@ export default function ChannelPage() {
   }
 
   async function leaveGroup() {
-    const user = getCurrentUser()
     if (!community) return
     try {
-      await fetch(`${API}/communities/${community.id}/leave?user_id=${user.id || 1}`, { method: "POST" })
+      await authFetch(`${API}/communities/${community.id}/leave`, { method: "POST" })
       window.location.href = "/home"
     } catch {}
   }
@@ -287,7 +282,7 @@ export default function ChannelPage() {
   async function removeMember(userId: number) {
     if (!community) return
     try {
-      await fetch(`${API}/communities/${community.id}/members/${userId}`, { method: "DELETE" })
+      await authFetch(`${API}/communities/${community.id}/members/${userId}`, { method: "DELETE" })
       setMembers(prev => prev.filter(m => m.user_id !== userId))
     } catch {}
   }
@@ -666,7 +661,7 @@ export default function ChannelPage() {
                         setAddingMember(true)
                         setAddMemberMsg("")
                         try {
-                          const res = await fetch(`${API}/communities/${community.id}/join?user_id=1`, { method: "POST" })
+                          const res = await authFetch(`${API}/communities/${community.id}/join`, { method: "POST" })
                           setAddMemberMsg(res.ok ? "✅ Invite sent!" : "❌ Failed")
                           loadMembers()
                         } catch { setAddMemberMsg("❌ Error") }

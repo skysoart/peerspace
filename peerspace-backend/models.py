@@ -14,6 +14,7 @@ class User(Base):
     group_id = Column(Integer)
     created_at = Column(DateTime, default=datetime.utcnow)
     profile_picture = Column(Text)
+    bio = Column(Text)
 
 
 class Community(Base):

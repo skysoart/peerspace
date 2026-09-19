@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { apiClient } from "@/services/apiClient"
 import { User, Loader2 } from "lucide-react"
+import { getStoredUser } from "@/services/authFetch"
 
 interface Profile {
   id: number
@@ -20,13 +21,14 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
-  const userId = 1
+  const userId = getStoredUser()?.id ?? 0
 
   useEffect(() => {
 
     async function loadProfile() {
 
-      const res = await apiClient.getUser(userId)
+      // /profile returns bio; /users does not.
+      const res = await apiClient.getProfile(userId)
 
       const data = res.data || res
 
@@ -44,10 +46,9 @@ export default function ProfilePage() {
 
     setSaving(true)
 
-    await apiClient.updateUser(userId, {
-      username,
-      bio
-    })
+    // username lives on the user record, bio on the profile record
+    await apiClient.updateUser(userId, { username })
+    await apiClient.updateProfile(userId, { bio })
 
     setProfile({
       id: userId,

@@ -4,20 +4,18 @@ import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
 import { ArrowRight, Sparkles } from "lucide-react"
 import FloatingLines from "@/components/ui/floating-lines"
+import { ensureGuestSession } from "@/services/authFetch"
 
 export default function LandingPage() {
 
   const router = useRouter()
 
-  const continueAsGuest = () => {
+  const continueAsGuest = async () => {
 
-    const guestUser = {
-      id: 99999,  // Use a fixed numeric guest ID for API compatibility
-      username: "Guest_" + Math.floor(Math.random() * 10000),
-      type: "guest"
-    }
+    // The server issues the guest token; the client no longer invents an id.
+    const guest = await ensureGuestSession()
 
-    localStorage.setItem("user", JSON.stringify(guestUser))
+    if (!guest) return
 
     router.push("/home")
   }

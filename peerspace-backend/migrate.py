@@ -14,7 +14,8 @@ def migrate():
         "ALTER TABLE messages ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP",
         "ALTER TABLE messages ADD COLUMN IF NOT EXISTS channel_id_ref INTEGER",
         "ALTER TABLE messages ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE",
-        "ALTER TABLE communities ADD COLUMN IF NOT EXISTS icon VARCHAR"
+        "ALTER TABLE communities ADD COLUMN IF NOT EXISTS icon VARCHAR",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS bio TEXT"
     ]
     
     with engine.connect() as conn:

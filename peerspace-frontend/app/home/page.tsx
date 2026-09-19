@@ -6,6 +6,7 @@ import { ShieldCheck, Activity, Users, Hash, ChevronRight, Plus, Loader2 } from 
 import { useRouter } from "next/navigation"
 import clsx from "clsx"
 import FloatingLines from "@/components/ui/floating-lines"
+import { authFetch } from "@/services/authFetch"
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"
 
@@ -39,8 +40,8 @@ export default function HomePage() {
     const fetchAll = async () => {
       try {
         const [commRes, statsRes] = await Promise.all([
-          fetch(`${API}/communities/`),
-          fetch(`${API}/messages/admin/stats`)
+          authFetch(`${API}/communities/`),
+          authFetch(`${API}/messages/admin/stats`)
         ])
         const comms = await commRes.json()
         const st = await statsRes.json()

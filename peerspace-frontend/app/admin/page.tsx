@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Shield, Activity, MessageSquareWarning, Mic, Send, Box, ShieldCheck, ShieldAlert, Cpu } from "lucide-react"
 import clsx from "clsx"
 import FloatingLines from "@/components/ui/floating-lines"
+import { authFetch } from "@/services/authFetch"
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"
 
@@ -46,7 +47,7 @@ export default function AdminDashboard() {
   // Fetch real stats from backend
   async function fetchStats() {
     try {
-      const res = await fetch(`${API}/messages/admin/stats`)
+      const res = await authFetch(`${API}/messages/admin/stats`)
       if (res.ok) {
         const data = await res.json()
         setStats({ safe: data.safe_messages, blocked: data.flagged_messages, channels: data.total_channels })
@@ -92,10 +93,10 @@ export default function AdminDashboard() {
       addLog(`Analyzing network payload...`)
       
       // We assume channel_id 1 is the test target
-      const res = await fetch(`${API}/messages/send`, {
+      const res = await authFetch(`${API}/messages/send`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: 1, channel_id: 1, message_text: text })
+        body: JSON.stringify({ channel_id: 1, message_text: text })
       })
       
       const data = await res.json()
@@ -120,7 +121,7 @@ export default function AdminDashboard() {
     if (key === "techKali") {
       
       try {
-        await fetch(`${API}/messages/admin/override/${msgId}`, { method: "POST" })
+        await authFetch(`${API}/messages/admin/override/${msgId}`, { method: "POST" })
       } catch (e) {}
 
       setStats(prev => ({ ...prev, blocked: prev.blocked - 1, safe: prev.safe + 1 }))

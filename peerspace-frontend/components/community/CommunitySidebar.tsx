@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Plus, Home, Shield, LogOut } from "lucide-react"
 import { useRouter, usePathname } from "next/navigation"
 import clsx from "clsx"
+import { authFetch } from "@/services/authFetch"
 
 interface Community {
   id: number
@@ -29,7 +30,7 @@ export default function CommunitySidebar() {
   const pathname = usePathname()
 
   useEffect(() => {
-    fetch(`${API}/communities/`)
+    authFetch(`${API}/communities/`)
       .then(r => r.json())
       .then((data: Community[]) => {
         setCommunities(data)

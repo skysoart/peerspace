@@ -24,15 +24,6 @@ export default function CommunitiesPage() {
   const [newCommunityDesc, setNewCommunityDesc] = useState("")
   const [newCommunityRules, setNewCommunityRules] = useState("")
 
-  // Get logged-in user
-  function getOwnerId(): number {
-    try {
-      const stored = localStorage.getItem("user")
-      if (stored) return JSON.parse(stored).id ?? 1
-    } catch {}
-    return 1
-  }
-
   /* FETCH COMMUNITIES */
 
   const { data: communities, isLoading } = useQuery<Community[]>({
@@ -47,7 +38,6 @@ export default function CommunitiesPage() {
       await apiClient.createCommunity({
         name: newCommunityName,
         description: newCommunityDesc,
-        owner_id: getOwnerId(),
       })
     },
     onSuccess: () => {

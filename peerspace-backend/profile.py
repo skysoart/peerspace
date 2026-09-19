@@ -3,7 +3,8 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
 from database import get_db
-from models import UserDB
+from models import User
+from auth import get_current_user
 
 router = APIRouter()
 
@@ -24,7 +25,7 @@ class UpdateProfileRequest(BaseModel):
 @router.get("/{user_id}")
 def get_profile(user_id: int, db: Session = Depends(get_db)):
 
-    user = db.query(UserDB).filter(UserDB.id == user_id).first()
+    user = db.query(User).filter(User.id == user_id).first()
 
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -43,28 +44,32 @@ def get_profile(user_id: int, db: Session = Depends(get_db)):
 # ==========================
 
 @router.put("/{user_id}")
-def update_profile(user_id: int, request: UpdateProfileRequest, db: Session = Depends(get_db)):
+def update_profile(
+    user_id: int,
+    request: UpdateProfileRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
 
-    user = db.query(UserDB).filter(UserDB.id == user_id).first()
-
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+    if current_user.id != user_id:
+        raise HTTPException(status_code=403, detail="You can only edit your own profile")
 
     if request.bio is not None:
-        user.bio = request.bio
+        current_user.bio = request.bio
 
     if request.profile_picture is not None:
-        user.profile_picture = request.profile_picture
+        current_user.profile_picture = request.profile_picture
 
     db.commit()
-    db.refresh(user)
+    db.refresh(current_user)
 
     return {
         "status": "success",
         "message": "Profile updated",
         "profile": {
-            "username": user.username,
-            "bio": user.bio,
-            "profile_picture": user.profile_picture
+            "id": current_user.id,
+            "username": current_user.username,
+            "bio": current_user.bio,
+            "profile_picture": current_user.profile_picture
         }
     }
