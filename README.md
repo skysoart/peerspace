@@ -305,10 +305,10 @@ Potential future improvements include:
 
 ## Contributors
 
+* [skysoart](https://github.com/skysoart)
 * [anshmittal-os](https://github.com/anshmittal-os)
 * [Dhruvtilara](https://github.com/Dhruvtilara)
 * [SAUBHAGYA7](https://github.com/SAUBHAGYA7)
-* [skysoart](https://github.com/skysoart)
 * [khushal123supreme](https://github.com/khushal123supreme)
 
 ## License
